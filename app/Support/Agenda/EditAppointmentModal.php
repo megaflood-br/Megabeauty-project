@@ -302,7 +302,7 @@ final class EditAppointmentModal
     public static function timeOptions(?int $professionalId, ?string $date, ?int $exceptAppointmentId): array
     {
         $timeline = new ResourceTimeline;
-        $busy = [];
+        $busy = collect();
 
         if ($professionalId !== null && filled($date)) {
             $busy = Appointment::query()
