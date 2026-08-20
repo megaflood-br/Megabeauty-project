@@ -73,4 +73,12 @@ final class EditAppointmentModalTest extends TestCase
         $this->assertSame(90, $data['items'][0]['duration']);
         $this->assertSame($appointment->id, $data['record_id']);
     }
+
+    public function test_time_options_work_when_adding_an_item_without_professional(): void
+    {
+        $options = EditAppointmentModal::timeOptions(null, '2026-08-20', null);
+
+        $this->assertArrayHasKey('09:00', $options);
+        $this->assertSame('09:00', $options['09:00']);
+    }
 }
