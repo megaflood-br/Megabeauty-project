@@ -142,11 +142,16 @@
             left: 4px;
             right: 4px;
             z-index: 5;
+            border: 0;
             border-radius: 6px;
             padding: 6px 8px;
             overflow: hidden;
             color: #fff;
+            text-align: left;
             text-decoration: none;
+            font: inherit;
+            cursor: pointer;
+            appearance: none;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         .mb-agenda-block.is-busy {
@@ -245,10 +250,12 @@
 
                     @foreach ($this->appointmentsFor($professional) as $appointment)
                         @php($pos = $this->blockPosition($appointment))
-                        <a
-                            href="{{ $this->appointmentUrl($appointment) }}"
+                        <button
+                            type="button"
+                            wire:click="mountAction('editAppointment', { record: {{ $appointment->id }} })"
                             class="mb-agenda-block {{ $this->isOccupied($appointment) ? 'is-busy' : 'is-active' }}"
                             style="top: {{ $pos['top'] }}px; height: {{ $pos['height'] }}px; {{ $this->isOccupied($appointment) ? '' : 'background: '.($appointment->professional?->color ?: '#059669').';' }}"
+                            title="Editar agendamento de {{ $appointment->client?->name }}"
                         >
                             <div class="mb-agenda-block-time">
                                 {{ $appointment->starts_at->format('H:i') }}
@@ -261,7 +268,7 @@
                                 <div class="mb-agenda-block-client">{{ $appointment->client?->name }}</div>
                                 <div class="mb-agenda-block-service">{{ $appointment->service?->name }}</div>
                             @endif
-                        </a>
+                        </button>
                     @endforeach
                 </div>
             @endforeach

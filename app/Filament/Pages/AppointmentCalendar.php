@@ -10,8 +10,11 @@ use App\Models\Appointment;
 use App\Models\Professional;
 use App\Support\Agenda\ResourceTimeline;
 use Carbon\CarbonImmutable;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Grid;
 use Filament\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class AppointmentCalendar extends Page
@@ -100,9 +103,36 @@ class AppointmentCalendar extends Page
         return CarbonImmutable::parse($this->date)->locale('pt_BR')->translatedFormat('l, d/m/Y');
     }
 
-    public function appointmentUrl(Appointment $appointment): string
+    public function editAppointmentAction(): EditAction
     {
-        return AppointmentResource::getUrl('edit', ['record' => $appointment]);
+        return EditAction::make('editAppointment')
+            ->record(fn (array $arguments): Appointment => Appointment::query()
+                ->with('client')
+                ->findOrFail((int) $arguments['record']))
+            ->form([
+                Grid::make(2)
+                    ->schema(AppointmentResource::formSchema()),
+            ])
+            ->modalWidth(MaxWidth::ThreeExtraLarge)
+            ->modalHeading(function (?Model $record): string {
+                $client = $record instanceof Appointment ? $record->client?->name : null;
+
+                return filled($client) ? "Editar agendamento · {$client}" : 'Editar agendamento';
+            })
+            ->modalSubmitActionLabel('Salvar')
+            ->modalCancelActionLabel('Cancelar')
+            ->successNotificationTitle('Agendamento atualizado')
+            ->mutateFormDataUsing(function (array $data): array {
+                if (($data['status'] ?? null) === AppointmentStatus::Cancelled->value) {
+                    $data['cancelled_at'] = $data['cancelled_at'] ?? now();
+                }
+
+                if (($data['status'] ?? null) === AppointmentStatus::Confirmed->value) {
+                    $data['confirmed_at'] = $data['confirmed_at'] ?? now();
+                }
+
+                return $data;
+            });
     }
 
     public function createUrl(Professional $professional, int $minutes): string
