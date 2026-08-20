@@ -20,4 +20,28 @@ enum AppointmentStatus: string
             default => false,
         };
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Scheduled => 'Agendado',
+            self::Confirmed => 'Confirmado',
+            self::InProgress => 'Em atendimento',
+            self::Completed => 'Concluído',
+            self::Cancelled => 'Cancelado',
+            self::NoShow => 'Não compareceu',
+        };
+    }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::Scheduled => 'gray',
+            self::Confirmed => 'info',
+            self::InProgress => 'warning',
+            self::Completed => 'success',
+            self::Cancelled => 'danger',
+            self::NoShow => 'danger',
+        };
+    }
 }

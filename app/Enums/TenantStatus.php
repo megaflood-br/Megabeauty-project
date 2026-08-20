@@ -18,4 +18,14 @@ enum TenantStatus: string
             self::Suspended, self::Cancelled => false,
         };
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Trial => 'Trial',
+            self::Active => 'Ativo',
+            self::Suspended => 'Suspenso',
+            self::Cancelled => 'Cancelado',
+        };
+    }
 }
