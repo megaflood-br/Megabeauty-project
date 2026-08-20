@@ -1,4 +1,5 @@
 <x-filament-panels::page>
+    @include('filament.agenda.edit-modal-styles')
     <style>
         .mb-agenda {
             --slot-h: {{ \App\Support\Agenda\ResourceTimeline::SLOT_HEIGHT_PX }}px;
@@ -254,7 +255,7 @@
                             type="button"
                             wire:click="mountAction('editAppointment', { record: {{ $appointment->id }} })"
                             class="mb-agenda-block {{ $this->isOccupied($appointment) ? 'is-busy' : 'is-active' }}"
-                            style="top: {{ $pos['top'] }}px; height: {{ $pos['height'] }}px; {{ $this->isOccupied($appointment) ? '' : 'background: '.($appointment->professional?->color ?: '#059669').';' }}"
+                            style="top: {{ $pos['top'] }}px; height: {{ $pos['height'] }}px; {{ $this->isOccupied($appointment) ? '' : 'background: '.($appointment->color ?: $appointment->professional?->color ?: '#059669').';' }}"
                             title="Editar agendamento de {{ $appointment->client?->name }}"
                         >
                             <div class="mb-agenda-block-time">

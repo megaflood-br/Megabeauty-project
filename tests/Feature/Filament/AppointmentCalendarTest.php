@@ -100,12 +100,14 @@ final class AppointmentCalendarTest extends TestCase
 
         Livewire::test(AppointmentCalendar::class)
             ->mountAction('editAppointment', ['record' => $appointment->id])
-            ->assertSee('Editar agendamento')
+            ->assertSee('Editando agendamento')
             ->assertSee('Aline Alves')
+            ->assertSee('Conversar')
+            ->assertSee('Itens do agendamento')
+            ->assertSee('Enviar lembrete')
+            ->assertSee('Criar comanda')
             ->assertActionDataSet([
                 'client_id' => $appointment->client_id,
-                'professional_id' => $appointment->professional_id,
-                'service_id' => $appointment->service_id,
             ])
             ->setActionData([
                 'notes' => 'Atualizado no modal',

@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Enums\AppointmentStatus;
+use App\Enums\FinancialTransactionStatus;
+use App\Enums\FinancialTransactionType;
 use App\Filament\Resources\AppointmentResource;
 use App\Models\Appointment;
+use App\Models\FinancialTransaction;
 use App\Models\Professional;
+use App\Support\Agenda\EditAppointmentModal;
 use App\Support\Agenda\ResourceTimeline;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -107,31 +115,115 @@ class AppointmentCalendar extends Page
     {
         return EditAction::make('editAppointment')
             ->record(fn (array $arguments): Appointment => Appointment::query()
-                ->with('client')
+                ->with(['client', 'professional', 'service'])
                 ->findOrFail((int) $arguments['record']))
-            ->form([
-                Grid::make(2)
-                    ->schema(AppointmentResource::formSchema()),
-            ])
-            ->modalWidth(MaxWidth::ThreeExtraLarge)
-            ->modalHeading(function (?Model $record): string {
-                $client = $record instanceof Appointment ? $record->client?->name : null;
-
-                return filled($client) ? "Editar agendamento · {$client}" : 'Editar agendamento';
-            })
+            ->form(EditAppointmentModal::schema())
+            ->modalWidth(MaxWidth::SevenExtraLarge)
+            ->modalHeading('Editando agendamento')
             ->modalSubmitActionLabel('Salvar')
             ->modalCancelActionLabel('Cancelar')
+            ->stickyModalFooter()
+            ->extraModalWindowAttributes(['class' => 'mb-agenda-edit-modal'])
+            ->modalFooterActionsAlignment(Alignment::End)
             ->successNotificationTitle('Agendamento atualizado')
-            ->mutateFormDataUsing(function (array $data): array {
-                if (($data['status'] ?? null) === AppointmentStatus::Cancelled->value) {
-                    $data['cancelled_at'] = $data['cancelled_at'] ?? now();
-                }
+            ->mutateRecordDataUsing(fn (array $data, Model $record): array => $record instanceof Appointment
+                ? EditAppointmentModal::mutateRecordData($record, $data)
+                : $data)
+            ->mutateFormDataUsing(fn (array $data): array => EditAppointmentModal::mutateFormData($data))
+            ->modalFooterActions(function (EditAction $action): array {
+                return [
+                    Action::make('help')
+                        ->label('Ajuda')
+                        ->icon('heroicon-o-question-mark-circle')
+                        ->color('gray')
+                        ->link()
+                        ->action(function (): void {
+                            Notification::make()
+                                ->title('Como editar o horário')
+                                ->body('Altere o cliente, a data, o status e os itens do agendamento. Salvar aplica as mudanças na grade.')
+                                ->info()
+                                ->send();
+                        }),
+                    Action::make('others')
+                        ->label('Outros')
+                        ->icon('heroicon-m-chevron-down')
+                        ->color('gray')
+                        ->outlined()
+                        ->form([
+                            Select::make('next_status')
+                                ->label('Ação')
+                                ->options([
+                                    AppointmentStatus::Completed->value => 'Marcar como concluído',
+                                    AppointmentStatus::NoShow->value => 'Não compareceu',
+                                    AppointmentStatus::Cancelled->value => 'Cancelar agendamento',
+                                ])
+                                ->required()
+                                ->native(false),
+                        ])
+                        ->modalHeading('Outras ações')
+                        ->modalSubmitActionLabel('Aplicar')
+                        ->action(function (array $data, ?Model $record): void {
+                            if (! $record instanceof Appointment) {
+                                return;
+                            }
 
-                if (($data['status'] ?? null) === AppointmentStatus::Confirmed->value) {
-                    $data['confirmed_at'] = $data['confirmed_at'] ?? now();
-                }
+                            $payload = ['status' => $data['next_status']];
 
-                return $data;
+                            if ($data['next_status'] === AppointmentStatus::Cancelled->value) {
+                                $payload['cancelled_at'] = $record->cancelled_at ?? now();
+                            }
+
+                            $record->update($payload);
+
+                            Notification::make()
+                                ->title('Agendamento atualizado')
+                                ->success()
+                                ->send();
+                        }),
+                    $action->getModalCancelAction(),
+                    DeleteAction::make()
+                        ->label('Excluir')
+                        ->successNotificationTitle('Agendamento excluído'),
+                    $action->getModalSubmitAction(),
+                    Action::make('createOrder')
+                        ->label('Criar comanda')
+                        ->color('success')
+                        ->action(function (?Model $record): void {
+                            if (! $record instanceof Appointment) {
+                                return;
+                            }
+
+                            $exists = FinancialTransaction::query()
+                                ->where('appointment_id', $record->id)
+                                ->where('status', FinancialTransactionStatus::Pending)
+                                ->exists();
+
+                            if ($exists) {
+                                Notification::make()
+                                    ->title('Este agendamento já tem uma comanda em aberto.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            FinancialTransaction::query()->create([
+                                'appointment_id' => $record->id,
+                                'client_id' => $record->client_id,
+                                'professional_id' => $record->professional_id,
+                                'type' => FinancialTransactionType::Income,
+                                'category' => 'comanda',
+                                'amount' => $record->price,
+                                'status' => FinancialTransactionStatus::Pending,
+                                'description' => 'Comanda do agendamento #'.$record->id,
+                            ]);
+
+                            Notification::make()
+                                ->title('Comanda criada')
+                                ->success()
+                                ->send();
+                        }),
+                ];
             });
     }
 
