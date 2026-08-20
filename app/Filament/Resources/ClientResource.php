@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\Clients\ClientForm;
 use App\Filament\Resources\ClientResource\Pages;
 use App\Models\Client;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -24,72 +24,39 @@ class ClientResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Clientes';
 
+    protected static ?string $recordTitleAttribute = 'name';
+
     protected static ?int $navigationSort = 12;
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Cliente')
-                    ->columns(2)
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nome')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('phone')
-                            ->label('WhatsApp / telefone')
-                            ->tel()
-                            ->required()
-                            ->maxLength(20),
-                        Forms\Components\TextInput::make('email')
-                            ->label('E-mail')
-                            ->email()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('document')
-                            ->label('CPF')
-                            ->maxLength(20),
-                        Forms\Components\DatePicker::make('birth_date')
-                            ->label('Nascimento')
-                            ->native(false)
-                            ->displayFormat('d/m/Y'),
-                        Forms\Components\Select::make('source')
-                            ->label('Origem')
-                            ->options([
-                                'whatsapp' => 'WhatsApp',
-                                'walk_in' => 'Presencial',
-                                'instagram' => 'Instagram',
-                                'indicacao' => 'Indicação',
-                                'online' => 'Online',
-                            ])
-                            ->native(false),
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Observações')
-                            ->rows(3)
-                            ->columnSpanFull(),
-                    ]),
-            ]);
+        return $form->schema(ClientForm::schema());
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('avatar_path')
+                    ->label('')
+                    ->circular()
+                    ->defaultImageUrl(fn (Client $record): string => 'https://ui-avatars.com/api/?name='.urlencode($record->name).'&background=059669&color=fff')
+                    ->size(32),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nome')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn (Client $record): ?string => $record->nickname),
                 Tables\Columns\TextColumn::make('phone')
-                    ->label('Telefone')
+                    ->label('Celular')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->label('E-mail')
                     ->searchable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('source')
-                    ->label('Origem')
-                    ->badge()
-                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Ativo')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('appointments_count')
                     ->label('Agendamentos')
                     ->counts('appointments')
@@ -101,6 +68,12 @@ class ClientResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label('Ativo')
+                    ->boolean()
+                    ->trueLabel('Ativos')
+                    ->falseLabel('Inativos')
+                    ->placeholder('Todos'),
                 Tables\Filters\SelectFilter::make('source')
                     ->label('Origem')
                     ->options([

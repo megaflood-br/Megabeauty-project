@@ -62,7 +62,7 @@ final class EditAppointmentModal
             ])->schema([
                 Forms\Components\Select::make('client_id')
                     ->label('Cliente')
-                    ->relationship('client', 'name')
+                    ->relationship('client', 'name', fn ($query) => $query->schedulable()->orderBy('name'))
                     ->getOptionLabelFromRecordUsing(
                         fn (Model $record): string => $record instanceof Client
                             ? $record->name.' · '.$record->formattedPhone()
