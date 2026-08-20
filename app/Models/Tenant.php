@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Enums\TenantStatus;
 use Database\Factories\TenantFactory;
+use Filament\Models\Contracts\HasCurrentTenantLabel;
+use Filament\Models\Contracts\HasName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Tenant extends Model
+class Tenant extends Model implements HasCurrentTenantLabel, HasName
 {
     /** @use HasFactory<TenantFactory> */
     use HasFactory, SoftDeletes;
@@ -52,6 +54,16 @@ class Tenant extends Model
     public function isAccessible(): bool
     {
         return $this->status->isAccessible();
+    }
+
+    public function getFilamentName(): string
+    {
+        return $this->name;
+    }
+
+    public function getCurrentTenantLabel(): string
+    {
+        return 'Estabelecimento';
     }
 
     /**

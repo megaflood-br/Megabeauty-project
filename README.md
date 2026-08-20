@@ -53,7 +53,28 @@ php artisan db:seed
 php artisan test
 ```
 
-Hosts locais de exemplo: `demo.localhost`, `salao-ana.localhost`.
+## Painel (Filament)
+
+1. `composer install`
+2. `copy .env.example .env` (Windows) ou `cp .env.example .env`
+3. `php artisan key:generate`
+4. `php artisan migrate --seed`
+5. `php artisan serve`
+
+Acesse **http://127.0.0.1:8000/admin**
+
+- E-mail: `owner@megabeauty.test`
+- Senha: `password`
+- Depois do login o Filament abre o tenant `demo` em `/admin/demo`
+
+No menu: Agenda (calendário + agendamentos), Cadastros, WhatsApp (Evolution) e Assistente IA.
+
+Lembretes de WhatsApp saem em fila. Com `QUEUE_CONNECTION=database`, rode também:
+
+```bash
+php artisan queue:work
+```
+
 
 ## OpenAI
 

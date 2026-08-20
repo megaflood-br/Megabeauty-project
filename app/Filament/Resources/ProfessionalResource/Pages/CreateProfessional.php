@@ -1,0 +1,13 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\Resources\ProfessionalResource\Pages;
+
+use App\Filament\Resources\ProfessionalResource;
+use Filament\Resources\Pages\CreateRecord;
+
+class CreateProfessional extends CreateRecord
+{
+    protected static string $resource = ProfessionalResource::class;
+}

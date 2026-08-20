@@ -33,12 +33,19 @@ final class OpenAIClient
             'model' => $options['model'] ?? config('openai.model'),
             'temperature' => $options['temperature'] ?? config('openai.temperature'),
             'max_tokens' => $options['max_tokens'] ?? config('openai.max_tokens'),
-            'response_format' => $options['response_format'] ?? ['type' => 'json_object'],
             'messages' => array_map(
                 static fn (ChatMessage $message): array => $message->toArray(),
                 $messages,
             ),
         ];
+
+        $responseFormat = array_key_exists('response_format', $options)
+            ? $options['response_format']
+            : ['type' => 'json_object'];
+
+        if (is_array($responseFormat)) {
+            $payload['response_format'] = $responseFormat;
+        }
 
         try {
             $response = $this->http
