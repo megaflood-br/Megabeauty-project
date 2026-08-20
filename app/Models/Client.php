@@ -46,6 +46,53 @@ class Client extends Model
         return $this->hasMany(FinancialTransaction::class);
     }
 
+    public function initials(): string
+    {
+        $parts = preg_split('/\s+/', trim($this->name)) ?: [];
+        $letters = '';
+
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $letters .= mb_strtoupper(mb_substr((string) $part, 0, 1));
+        }
+
+        return $letters !== '' ? $letters : 'C';
+    }
+
+    public function formattedPhone(): string
+    {
+        $digits = preg_replace('/\D+/', '', $this->phone) ?? '';
+
+        if (strlen($digits) === 11) {
+            return sprintf('(%s) %s-%s', substr($digits, 0, 2), substr($digits, 2, 5), substr($digits, 7));
+        }
+
+        if (strlen($digits) === 10) {
+            return sprintf('(%s) %s-%s', substr($digits, 0, 2), substr($digits, 2, 4), substr($digits, 6));
+        }
+
+        return $this->phone;
+    }
+
+    public function whatsappUrl(): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $this->phone) ?? '';
+
+        if (strlen($digits) < 10) {
+            return null;
+        }
+
+        if (! str_starts_with($digits, '55')) {
+            $digits = '55'.$digits;
+        }
+
+        return 'https://wa.me/'.$digits;
+    }
+
+    public function age(): ?int
+    {
+        return $this->birth_date?->age;
+    }
+
     /**
      * @return array<string, string>
      */

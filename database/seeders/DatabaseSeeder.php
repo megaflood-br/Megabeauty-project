@@ -109,7 +109,7 @@ class DatabaseSeeder extends Seeder
 
             $anaClient = Client::query()->firstOrCreate(
                 ['tenant_id' => $tenant->id, 'phone' => '11955554444'],
-                ['name' => 'Ana Caroline Torres', 'email' => 'ana.torres@example.com', 'source' => 'indicacao'],
+                ['name' => 'Ana Caroline Torres', 'email' => 'ana.torres@example.com', 'source' => 'indicacao', 'birth_date' => '1992-08-14', 'notes' => 'Prefere esmalte claro.'],
             );
 
             if (Appointment::query()->doesntExist()) {
