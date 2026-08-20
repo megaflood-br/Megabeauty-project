@@ -30,7 +30,16 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        app(TenantContext::class)->run($tenant, function () use ($tenant): void {
+        $hours = [
+            'monday' => ['08:00', '18:00'],
+            'tuesday' => ['08:00', '18:00'],
+            'wednesday' => ['08:00', '18:00'],
+            'thursday' => ['08:00', '18:00'],
+            'friday' => ['08:00', '18:00'],
+            'saturday' => ['08:00', '14:00'],
+        ];
+
+        app(TenantContext::class)->run($tenant, function () use ($tenant, $hours): void {
             User::withoutTenant()->firstOrCreate(
                 [
                     'tenant_id' => $tenant->id,
@@ -45,22 +54,30 @@ class DatabaseSeeder extends Seeder
                 ],
             );
 
-            $ana = Professional::query()->firstOrCreate(
-                ['tenant_id' => $tenant->id, 'email' => 'ana@megabeauty.test'],
-                [
-                    'name' => 'Ana Souza',
-                    'phone' => '11988887777',
-                    'color' => '#059669',
-                    'is_active' => true,
-                    'commission_rate' => 40,
-                ],
-            );
+            $professionals = [];
+            foreach ([
+                ['name' => 'Aline Costa', 'email' => 'aline@megabeauty.test', 'color' => '#64748b'],
+                ['name' => 'Ana Souza', 'email' => 'ana@megabeauty.test', 'color' => '#059669'],
+                ['name' => 'Cristine Lima', 'email' => 'cristine@megabeauty.test', 'color' => '#0f766e'],
+                ['name' => 'Bianca Alves', 'email' => 'bianca@megabeauty.test', 'color' => '#047857'],
+            ] as $row) {
+                $professionals[$row['email']] = Professional::query()->firstOrCreate(
+                    ['tenant_id' => $tenant->id, 'email' => $row['email']],
+                    [
+                        'name' => $row['name'],
+                        'color' => $row['color'],
+                        'is_active' => true,
+                        'commission_rate' => 40,
+                        'working_hours' => $hours,
+                    ],
+                );
+            }
 
             $corte = Service::query()->firstOrCreate(
                 ['tenant_id' => $tenant->id, 'name' => 'Corte'],
                 [
                     'description' => 'Corte feminino ou masculino',
-                    'duration_minutes' => 45,
+                    'duration_minutes' => 60,
                     'price' => 80,
                     'color' => '#10b981',
                     'category' => 'cabelo',
@@ -68,27 +85,71 @@ class DatabaseSeeder extends Seeder
                 ],
             );
 
-            $client = Client::query()->firstOrCreate(
-                ['tenant_id' => $tenant->id, 'phone' => '11977776666'],
+            $alongamento = Service::query()->firstOrCreate(
+                ['tenant_id' => $tenant->id, 'name' => 'Alongamento de Unha'],
                 [
-                    'name' => 'Maria Lima',
-                    'email' => 'maria@example.com',
-                    'source' => 'whatsapp',
+                    'description' => 'Alongamento em fibra de vidro',
+                    'duration_minutes' => 130,
+                    'price' => 180,
+                    'color' => '#059669',
+                    'category' => 'unhas',
+                    'is_active' => true,
                 ],
             );
 
+            $maria = Client::query()->firstOrCreate(
+                ['tenant_id' => $tenant->id, 'phone' => '11977776666'],
+                ['name' => 'Maria Lima', 'email' => 'maria@example.com', 'source' => 'whatsapp'],
+            );
+
+            $alineClient = Client::query()->firstOrCreate(
+                ['tenant_id' => $tenant->id, 'phone' => '11966665555'],
+                ['name' => 'Aline Alves de Oliveira', 'email' => 'aline.alves@example.com', 'source' => 'instagram'],
+            );
+
+            $anaClient = Client::query()->firstOrCreate(
+                ['tenant_id' => $tenant->id, 'phone' => '11955554444'],
+                ['name' => 'Ana Caroline Torres', 'email' => 'ana.torres@example.com', 'source' => 'indicacao'],
+            );
+
             if (Appointment::query()->doesntExist()) {
-                Appointment::withoutEvents(function () use ($tenant, $client, $ana, $corte): void {
+                Appointment::withoutEvents(function () use ($tenant, $professionals, $corte, $alongamento, $maria, $alineClient, $anaClient): void {
                     Appointment::query()->create([
                         'tenant_id' => $tenant->id,
-                        'client_id' => $client->id,
-                        'professional_id' => $ana->id,
+                        'client_id' => $anaClient->id,
+                        'professional_id' => $professionals['ana@megabeauty.test']->id,
+                        'service_id' => $alongamento->id,
+                        'starts_at' => now()->setTime(9, 0),
+                        'ends_at' => now()->setTime(11, 10),
+                        'status' => AppointmentStatus::Confirmed,
+                        'source' => AppointmentSource::Manual,
+                        'price' => 180,
+                    ]);
+
+                    Appointment::query()->create([
+                        'tenant_id' => $tenant->id,
+                        'client_id' => $alineClient->id,
+                        'professional_id' => $professionals['bianca@megabeauty.test']->id,
                         'service_id' => $corte->id,
-                        'starts_at' => now()->setTime(14, 0),
-                        'ends_at' => now()->setTime(14, 45),
+                        'starts_at' => now()->setTime(9, 0),
+                        'ends_at' => now()->setTime(10, 0),
                         'status' => AppointmentStatus::Confirmed,
                         'source' => AppointmentSource::Manual,
                         'price' => 80,
+                    ]);
+
+                    Appointment::query()->create([
+                        'tenant_id' => $tenant->id,
+                        'client_id' => $maria->id,
+                        'professional_id' => $professionals['aline@megabeauty.test']->id,
+                        'service_id' => $corte->id,
+                        'starts_at' => now()->setTime(8, 0),
+                        'ends_at' => now()->setTime(10, 0),
+                        'status' => AppointmentStatus::Cancelled,
+                        'source' => AppointmentSource::Manual,
+                        'price' => 80,
+                        'cancellation_reason' => 'Bloqueio de agenda',
+                        'cancelled_at' => now(),
                     ]);
                 });
             }

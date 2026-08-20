@@ -1,90 +1,270 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
-        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">
-                    {{ $this->formattedDate() }}
-                </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Horários do estabelecimento no dia selecionado.
-                </p>
-            </div>
+    <style>
+        .mb-agenda {
+            --slot-h: {{ \App\Support\Agenda\ResourceTimeline::SLOT_HEIGHT_PX }}px;
+            --time-w: 72px;
+            --col-w: 168px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fff;
+            overflow: auto;
+            max-height: calc(100vh - 14rem);
+        }
+        .dark .mb-agenda {
+            border-color: #374151;
+            background: #111827;
+        }
+        .mb-agenda-head,
+        .mb-agenda-body {
+            display: grid;
+            grid-template-columns: var(--time-w) repeat({{ $this->professionals()->count() ?: 1 }}, minmax(var(--col-w), 1fr));
+            min-width: calc(var(--time-w) + {{ max(1, $this->professionals()->count()) }} * var(--col-w));
+        }
+        .mb-agenda-head {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .dark .mb-agenda-head {
+            background: #111827;
+            border-bottom-color: #374151;
+        }
+        .mb-agenda-corner,
+        .mb-agenda-time {
+            position: sticky;
+            left: 0;
+            z-index: 21;
+            background: #fff;
+        }
+        .dark .mb-agenda-corner,
+        .dark .mb-agenda-time {
+            background: #111827;
+        }
+        .mb-agenda-pro {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-left: 1px solid #e5e7eb;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .dark .mb-agenda-pro {
+            border-left-color: #374151;
+        }
+        .mb-agenda-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .mb-agenda-body {
+            position: relative;
+        }
+        .mb-agenda-time {
+            z-index: 15;
+            border-right: 1px solid #e5e7eb;
+        }
+        .dark .mb-agenda-time {
+            border-right-color: #374151;
+        }
+        .mb-agenda-slot-label {
+            height: var(--slot-h);
+            padding: 0 8px;
+            font-size: 11px;
+            line-height: var(--slot-h);
+            color: #6b7280;
+            border-bottom: 1px solid transparent;
+        }
+        .mb-agenda-slot-label.is-hour {
+            border-bottom-color: #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+        }
+        .dark .mb-agenda-slot-label.is-hour {
+            border-bottom-color: #374151;
+            color: #d1d5db;
+        }
+        .mb-agenda-col {
+            position: relative;
+            border-left: 1px solid #f3f4f6;
+            background-image: repeating-linear-gradient(
+                to bottom,
+                transparent,
+                transparent calc(var(--slot-h) - 1px),
+                #f3f4f6 calc(var(--slot-h) - 1px),
+                #f3f4f6 var(--slot-h)
+            );
+        }
+        .dark .mb-agenda-col {
+            border-left-color: #1f2937;
+            background-image: repeating-linear-gradient(
+                to bottom,
+                transparent,
+                transparent calc(var(--slot-h) - 1px),
+                #1f2937 calc(var(--slot-h) - 1px),
+                #1f2937 var(--slot-h)
+            );
+        }
+        .mb-agenda-slots {
+            display: flex;
+            flex-direction: column;
+        }
+        .mb-agenda-slot {
+            height: var(--slot-h);
+            display: block;
+        }
+        .mb-agenda-slot:hover {
+            background: rgba(16, 185, 129, 0.08);
+        }
+        .mb-agenda-off {
+            position: absolute;
+            left: 0;
+            right: 0;
+            background: #e5e7eb;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .dark .mb-agenda-off {
+            background: #1f2937;
+        }
+        .mb-agenda-block {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            z-index: 5;
+            border-radius: 6px;
+            padding: 6px 8px;
+            overflow: hidden;
+            color: #fff;
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        }
+        .mb-agenda-block.is-busy {
+            background: #d1d5db;
+            color: #374151;
+        }
+        .mb-agenda-block.is-active {
+            background: #059669;
+        }
+        .mb-agenda-block-time {
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.2;
+            opacity: 0.95;
+        }
+        .mb-agenda-block-client {
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.25;
+            margin-top: 2px;
+        }
+        .mb-agenda-block-service {
+            font-size: 11px;
+            line-height: 1.25;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+    </style>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <x-filament::button color="gray" wire:click="previousDay">
-                    Dia anterior
-                </x-filament::button>
-                <x-filament::button color="gray" wire:click="today">
-                    Hoje
-                </x-filament::button>
-                <x-filament::button color="gray" wire:click="nextDay">
-                    Próximo dia
-                </x-filament::button>
-            </div>
+    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-950 dark:text-white">
+                {{ $this->formattedDate() }}
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                Grade diária por profissional, em intervalos de 15 minutos.
+            </p>
         </div>
-
-        <div class="grid gap-4 md:grid-cols-3">
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Data</label>
-                <input
-                    type="date"
-                    wire:model.live="date"
-                    class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
-                />
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Profissional</label>
-                <select
-                    wire:model.live="professionalId"
-                    class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
-                >
-                    <option value="">Todos</option>
-                    @foreach ($this->professionals() as $professional)
-                        <option value="{{ $professional->id }}">{{ $professional->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <x-filament::button color="gray" wire:click="previousDay">Dia anterior</x-filament::button>
+            <x-filament::button color="gray" wire:click="today">Hoje</x-filament::button>
+            <x-filament::button color="gray" wire:click="nextDay">Próximo dia</x-filament::button>
+            <input
+                type="date"
+                wire:model.live="date"
+                class="rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
+            />
         </div>
+    </div>
 
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-            @forelse ($this->appointments() as $appointment)
-                <a
-                    href="{{ $this->appointmentUrl($appointment) }}"
-                    class="flex flex-col gap-1 border-b border-gray-100 px-4 py-3 last:border-b-0 hover:bg-emerald-50/60 dark:border-gray-800 dark:hover:bg-gray-800 md:flex-row md:items-center md:justify-between"
-                >
-                    <div class="flex items-center gap-4">
-                        <div class="w-24 shrink-0 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                            {{ $appointment->starts_at->format('H:i') }}
-                            –
-                            {{ $appointment->ends_at->format('H:i') }}
-                        </div>
-                        <div>
-                            <div class="font-medium text-gray-950 dark:text-white">
-                                {{ $appointment->client?->name }}
-                            </div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ $appointment->service?->name }}
-                                ·
-                                {{ $appointment->professional?->name }}
-                            </div>
-                        </div>
-                    </div>
-                    <span @class([
-                        'inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
-                        'bg-gray-100 text-gray-700' => $appointment->status->value === 'scheduled',
-                        'bg-sky-100 text-sky-800' => $appointment->status->value === 'confirmed',
-                        'bg-amber-100 text-amber-800' => $appointment->status->value === 'in_progress',
-                        'bg-emerald-100 text-emerald-800' => $appointment->status->value === 'completed',
-                        'bg-rose-100 text-rose-800' => in_array($appointment->status->value, ['cancelled', 'no_show'], true),
-                    ])>
-                        {{ $this->statusLabel($appointment->status) }}
+    <div class="mb-agenda">
+        <div class="mb-agenda-head">
+            <div class="mb-agenda-corner"></div>
+            @forelse ($this->professionals() as $professional)
+                <div class="mb-agenda-pro">
+                    <span class="mb-agenda-avatar" style="background: {{ $professional->color ?: '#059669' }}">
+                        {{ $this->initials($professional) }}
                     </span>
-                </a>
+                    <span>{{ $professional->name }}</span>
+                </div>
             @empty
-                <div class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
-                    Nenhum agendamento neste dia.
+                <div class="mb-agenda-pro text-sm font-normal text-gray-500">
+                    Cadastre profissionais para montar a grade.
                 </div>
             @endforelse
+        </div>
+
+        <div class="mb-agenda-body" style="height: {{ $this->timeline()->gridHeight() }}px;">
+            <div class="mb-agenda-time">
+                @foreach ($this->timeline()->slots() as $slot)
+                    <div @class(['mb-agenda-slot-label', 'is-hour' => $slot['hour']])>
+                        {{ $slot['hour'] ? $slot['label'] : '' }}
+                    </div>
+                @endforeach
+            </div>
+
+            @foreach ($this->professionals() as $professional)
+                @php($window = $this->workingWindow($professional))
+                <div class="mb-agenda-col" style="height: {{ $this->timeline()->gridHeight() }}px;">
+                    @if ($before = $this->offHoursStyle($window, 'before'))
+                        <div class="mb-agenda-off" style="{{ $before }}"></div>
+                    @endif
+                    @if ($after = $this->offHoursStyle($window, 'after'))
+                        <div class="mb-agenda-off" style="{{ $after }}"></div>
+                    @endif
+
+                    <div class="mb-agenda-slots relative z-[2]">
+                        @foreach ($this->timeline()->slots() as $slot)
+                            <a
+                                class="mb-agenda-slot"
+                                href="{{ $this->createUrl($professional, $slot['minutes']) }}"
+                                title="Novo horário às {{ $slot['label'] }} com {{ $professional->name }}"
+                            ></a>
+                        @endforeach
+                    </div>
+
+                    @foreach ($this->appointmentsFor($professional) as $appointment)
+                        @php($pos = $this->blockPosition($appointment))
+                        <a
+                            href="{{ $this->appointmentUrl($appointment) }}"
+                            class="mb-agenda-block {{ $this->isOccupied($appointment) ? 'is-busy' : 'is-active' }}"
+                            style="top: {{ $pos['top'] }}px; height: {{ $pos['height'] }}px; {{ $this->isOccupied($appointment) ? '' : 'background: '.($appointment->professional?->color ?: '#059669').';' }}"
+                        >
+                            <div class="mb-agenda-block-time">
+                                {{ $appointment->starts_at->format('H:i') }}
+                                –
+                                {{ $appointment->ends_at->format('H:i') }}
+                            </div>
+                            @if ($this->isOccupied($appointment))
+                                <div class="mb-agenda-block-client">Ocupado</div>
+                            @else
+                                <div class="mb-agenda-block-client">{{ $appointment->client?->name }}</div>
+                                <div class="mb-agenda-block-service">{{ $appointment->service?->name }}</div>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
+            @endforeach
         </div>
     </div>
 </x-filament-panels::page>
