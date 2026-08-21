@@ -50,7 +50,7 @@ class AppointmentResource extends Resource
         return [
             Forms\Components\Select::make('client_id')
                 ->label('Cliente')
-                ->relationship('client', 'name')
+                ->relationship('client', 'name', fn ($query) => $query->schedulable()->orderBy('name'))
                 ->searchable()
                 ->preload()
                 ->required()

@@ -6,8 +6,10 @@ namespace App\Models;
 
 use App\Tenancy\Concerns\BelongsToTenant;
 use Database\Factories\ClientFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,12 +24,35 @@ class Client extends Model
     protected $fillable = [
         'tenant_id',
         'name',
+        'avatar_path',
+        'nickname',
         'email',
         'phone',
+        'landline',
         'document',
+        'cnpj',
+        'rg',
         'notes',
         'birth_date',
         'source',
+        'referred_by_client_id',
+        'hashtags',
+        'dependents',
+        'address_zip',
+        'address_street',
+        'address_number',
+        'address_complement',
+        'address_neighborhood',
+        'address_city',
+        'address_state',
+        'instagram',
+        'facebook',
+        'tiktok',
+        'default_discount_percent',
+        'default_discount_apply_on',
+        'is_active',
+        'notifications_enabled',
+        'access_blocked',
     ];
 
     /**
@@ -44,6 +69,31 @@ class Client extends Model
     public function financialTransactions(): HasMany
     {
         return $this->hasMany(FinancialTransaction::class);
+    }
+
+    /**
+     * @return BelongsTo<Client, $this>
+     */
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_client_id');
+    }
+
+    /**
+     * @return HasMany<Client, $this>
+     */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(self::class, 'referred_by_client_id');
+    }
+
+    /**
+     * @param  Builder<Client>  $query
+     * @return Builder<Client>
+     */
+    public function scopeSchedulable(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
     }
 
     public function initials(): string
@@ -100,6 +150,12 @@ class Client extends Model
     {
         return [
             'birth_date' => 'date',
+            'hashtags' => 'array',
+            'dependents' => 'array',
+            'default_discount_percent' => 'decimal:2',
+            'is_active' => 'boolean',
+            'notifications_enabled' => 'boolean',
+            'access_blocked' => 'boolean',
         ];
     }
 }
