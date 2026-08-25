@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\OpenAI;
 
+use App\Models\AiAgent;
 use App\Models\Client;
 use App\Models\Professional;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Services\Agents\AgentRuntime;
 use App\Services\OpenAI\DTOs\ChatMessage;
 use App\Services\OpenAI\DTOs\SuggestionContext;
 use App\Services\OpenAI\DTOs\SuggestionResult;
@@ -18,6 +20,7 @@ final class OpenAiService
     public function __construct(
         private readonly OpenAIClient $client,
         private readonly AppointmentSuggestionService $suggestions,
+        private readonly AgentRuntime $agents,
     ) {}
 
     /**
@@ -38,6 +41,12 @@ final class OpenAiService
      */
     public function generateWhatsAppReply(array $conversation, ?SuggestionContext $context = null): string
     {
+        $agent = $this->defaultAgent();
+
+        if ($agent instanceof AiAgent) {
+            return $this->agents->reply($agent, $conversation)->content;
+        }
+
         $context ??= $this->contextFromCurrentTenant();
 
         $messages = [
@@ -97,5 +106,18 @@ Se o cliente quiser agendar, confirme serviço, profissional e horário.
 Não invente serviços ou profissionais fora do catálogo informado.
 Não use markdown.
 PROMPT;
+    }
+
+    private function defaultAgent(): ?AiAgent
+    {
+        if (tenant_id() === null) {
+            return null;
+        }
+
+        return AiAgent::query()
+            ->where('is_active', true)
+            ->orderByDesc('is_default')
+            ->orderBy('id')
+            ->first();
     }
 }

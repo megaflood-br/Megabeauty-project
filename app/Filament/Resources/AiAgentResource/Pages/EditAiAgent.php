@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\Resources\AiAgentResource\Pages;
+
+use App\Filament\Resources\AiAgentResource;
+use Filament\Actions;
+use Filament\Resources\Pages\EditRecord;
+
+class EditAiAgent extends EditRecord
+{
+    protected static string $resource = AiAgentResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\DeleteAction::make(),
+        ];
+    }
+}

@@ -7,6 +7,10 @@ namespace App\Providers;
 use App\Auth\UnscopedEloquentUserProvider;
 use App\Models\Appointment;
 use App\Observers\AppointmentObserver;
+use App\Services\Agents\AgentPromptBuilder;
+use App\Services\Agents\AgentRuntime;
+use App\Services\Agents\AgentToolExecutor;
+use App\Services\Agents\CatalogSearch;
 use App\Services\Evolution\EvolutionApiService;
 use App\Services\OpenAI\AppointmentSuggestionService;
 use App\Services\OpenAI\OpenAIClient;
@@ -26,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(AppointmentSuggestionService::class);
         $this->app->singleton(OpenAiService::class);
         $this->app->singleton(EvolutionApiService::class);
+        $this->app->singleton(CatalogSearch::class);
+        $this->app->singleton(AgentPromptBuilder::class);
+        $this->app->singleton(AgentToolExecutor::class);
+        $this->app->singleton(AgentRuntime::class);
     }
 
     public function boot(): void

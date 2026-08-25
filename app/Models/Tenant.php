@@ -123,6 +123,38 @@ class Tenant extends Model implements HasCurrentTenantLabel, HasName
     }
 
     /**
+     * @return HasOne<CompanyProfile, $this>
+     */
+    public function companyProfile(): HasOne
+    {
+        return $this->hasOne(CompanyProfile::class);
+    }
+
+    /**
+     * @return HasMany<AiAgent, $this>
+     */
+    public function aiAgents(): HasMany
+    {
+        return $this->hasMany(AiAgent::class);
+    }
+
+    /**
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    /**
+     * @return HasMany<PriceTable, $this>
+     */
+    public function priceTables(): HasMany
+    {
+        return $this->hasMany(PriceTable::class);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

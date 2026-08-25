@@ -41,6 +41,11 @@ Helpers: `tenant()` e `tenant_id()`.
 | `appointments` | Agendamentos |
 | `financial_transactions` | Caixa (entrada/saída) |
 | `evolution_api_settings` | `url`, `instance_name`, `token` (criptografado) por tenant |
+| `company_profiles` | Ficha da empresa (CNPJ, endereço, horários) |
+| `products` | Produtos que o agente consulta |
+| `price_tables` / `price_table_items` | Tabelas de preço e combos |
+| `ai_agents` | Avatar, tom, modelo OpenAI e ferramentas |
+| `ai_agent_conversations` | Histórico do playground e do widget |
 
 ## Setup
 
@@ -67,7 +72,7 @@ Acesse **http://127.0.0.1:8000/admin**
 - Senha: `password`
 - Depois do login o Filament abre o tenant `demo` em `/admin/demo`
 
-No menu: Agenda (calendário + agendamentos), Cadastros, WhatsApp (Evolution) e Assistente IA.
+No menu: Agenda, Cadastros, **Agentes IA**, WhatsApp (Evolution) e Assistente de agenda.
 
 Lembretes de WhatsApp saem em fila. Com `QUEUE_CONNECTION=database`, rode também:
 
@@ -76,11 +81,30 @@ php artisan queue:work
 ```
 
 
-## OpenAI
+## Agentes de IA (OpenAI)
 
-`AppointmentSuggestionService` envia o histórico da conversa + catálogo do tenant e devolve JSON estruturado (intent, horários sugeridos, perguntas em aberto).
+Cada estabelecimento monta um ou mais agentes com **avatar**, **forma de atendimento** e **modelo OpenAI**. O catálogo não é despejado no prompt: o agente consulta produtos, serviços, tabelas de preço e a ficha da empresa (CNPJ, endereço, horários) só quando o cliente pede, via function calling.
+
+No painel, grupo **Agentes IA**:
+
+- Agentes (identidade, tom, ferramentas)
+- Empresa (CNPJ, endereço, horários, políticas)
+- Produtos
+- Tabelas de preço
+- Playground para testar o atendimento
+
+Chat público (com o tenant no host ou em localhost):
+
+- `https://salao-ana.seudominio.com/agente/luna`
+- `http://localhost:8000/t/demo/agente/luna`
+
+O agente padrão também passa a responder o fluxo de WhatsApp quando estiver ativo.
+
+Modelo recomendado: **gpt-4o-mini** (rápido e econômico). Use GPT-4o se o atendimento exigir mais precisão.
 
 Configure `OPENAI_API_KEY` no `.env`.
+
+O `AppointmentSuggestionService` continua disponível no menu Integrações (sugestão estruturada de agenda).
 
 ## Evolution API
 
