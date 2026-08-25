@@ -49,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Agenda')->collapsed(false),
                 NavigationGroup::make('Cadastros')->collapsed(false),
+                NavigationGroup::make('Agentes IA')->collapsed(false),
                 NavigationGroup::make('Plataforma')->collapsed(true),
                 NavigationGroup::make('Integrações')->collapsed(true),
             ])

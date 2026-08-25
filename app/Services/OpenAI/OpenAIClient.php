@@ -17,7 +17,7 @@ final class OpenAIClient
     ) {}
 
     /**
-     * @param  list<ChatMessage>  $messages
+     * @param  list<ChatMessage|array<string, mixed>>  $messages
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
@@ -33,18 +33,22 @@ final class OpenAIClient
             'model' => $options['model'] ?? config('openai.model'),
             'temperature' => $options['temperature'] ?? config('openai.temperature'),
             'max_tokens' => $options['max_tokens'] ?? config('openai.max_tokens'),
-            'messages' => array_map(
-                static fn (ChatMessage $message): array => $message->toArray(),
-                $messages,
-            ),
+            'messages' => $this->serializeMessages($messages),
         ];
+
+        $hasTools = isset($options['tools']) && is_array($options['tools']) && $options['tools'] !== [];
 
         $responseFormat = array_key_exists('response_format', $options)
             ? $options['response_format']
-            : ['type' => 'json_object'];
+            : ($hasTools ? null : ['type' => 'json_object']);
 
         if (is_array($responseFormat)) {
             $payload['response_format'] = $responseFormat;
+        }
+
+        if ($hasTools) {
+            $payload['tools'] = $options['tools'];
+            $payload['tool_choice'] = $options['tool_choice'] ?? 'auto';
         }
 
         try {
@@ -69,6 +73,20 @@ final class OpenAIClient
         }
 
         return $this->decode($response);
+    }
+
+    /**
+     * @param  list<ChatMessage|array<string, mixed>>  $messages
+     * @return list<array<string, mixed>>
+     */
+    private function serializeMessages(array $messages): array
+    {
+        return array_map(
+            static function (ChatMessage|array $message): array {
+                return $message instanceof ChatMessage ? $message->toArray() : $message;
+            },
+            $messages,
+        );
     }
 
     /**

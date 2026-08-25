@@ -9,4 +9,10 @@ return [
     'timeout' => (int) env('OPENAI_TIMEOUT', 30),
     'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 800),
     'temperature' => (float) env('OPENAI_TEMPERATURE', 0.2),
+    'models' => [
+        'gpt-4o-mini' => 'GPT-4o mini — rápido e econômico',
+        'gpt-4o' => 'GPT-4o — mais preciso',
+        'gpt-4.1-mini' => 'GPT-4.1 mini',
+        'gpt-4.1' => 'GPT-4.1',
+    ],
 ];
