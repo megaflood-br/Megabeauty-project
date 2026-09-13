@@ -263,9 +263,10 @@ final class EditAppointmentModal
 
         $totalMinutes = 0;
         $totalPrice = 0.0;
+        $slotMinutes = ResourceTimeline::forTenant()->slotMinutes();
 
         foreach ($items as $item) {
-            $duration = max(ResourceTimeline::SLOT_MINUTES, (int) ($item['duration'] ?? ResourceTimeline::SLOT_MINUTES));
+            $duration = max($slotMinutes, (int) ($item['duration'] ?? $slotMinutes));
             $totalMinutes += $duration;
 
             if (is_numeric($item['service_id'] ?? null)) {
@@ -277,7 +278,7 @@ final class EditAppointmentModal
         $data['professional_id'] = $first['professional_id'] ?? null;
         $data['service_id'] = $first['service_id'] ?? null;
         $data['starts_at'] = $startsAt->format('Y-m-d H:i:s');
-        $data['ends_at'] = $startsAt->copy()->addMinutes(max(ResourceTimeline::SLOT_MINUTES, $totalMinutes))->format('Y-m-d H:i:s');
+        $data['ends_at'] = $startsAt->copy()->addMinutes(max($slotMinutes, $totalMinutes))->format('Y-m-d H:i:s');
         $data['price'] = $totalPrice;
         $data['items'] = $items;
         $data['color'] = $data['color'] ?? null;
@@ -301,7 +302,7 @@ final class EditAppointmentModal
      */
     public static function timeOptions(?int $professionalId, ?string $date, ?int $exceptAppointmentId): array
     {
-        $timeline = new ResourceTimeline;
+        $timeline = ResourceTimeline::forTenant();
         $busy = collect();
 
         if ($professionalId !== null && filled($date)) {
@@ -323,7 +324,7 @@ final class EditAppointmentModal
             $slotStart = filled($date)
                 ? $timeline->slotDateTime($date, $slot['minutes'])
                 : null;
-            $slotEnd = $slotStart?->addMinutes(ResourceTimeline::SLOT_MINUTES);
+            $slotEnd = $slotStart?->addMinutes($timeline->slotMinutes());
 
             $unavailable = $slotStart !== null && $busy->contains(
                 function (Appointment $appointment) use ($slotStart, $slotEnd): bool {
@@ -343,7 +344,8 @@ final class EditAppointmentModal
      */
     public static function durationOptions(?int $current = null): array
     {
-        $minutesList = range(15, 240, 15);
+        $step = ResourceTimeline::forTenant()->slotMinutes();
+        $minutesList = range($step, 240, $step);
 
         if ($current !== null && $current > 0 && ! in_array($current, $minutesList, true)) {
             $minutesList[] = $current;
@@ -412,7 +414,7 @@ final class EditAppointmentModal
         $duration = 60;
 
         if ($record->starts_at !== null && $record->ends_at !== null) {
-            $duration = max(ResourceTimeline::SLOT_MINUTES, (int) $record->starts_at->diffInMinutes($record->ends_at));
+            $duration = max(ResourceTimeline::forTenant()->slotMinutes(), (int) $record->starts_at->diffInMinutes($record->ends_at));
         }
 
         return [[

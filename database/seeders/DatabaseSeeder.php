@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Salão Demo',
                 'owner_email' => 'demo@megabeauty.test',
                 'phone' => '11999999999',
+                'settings' => ['agenda_slot_minutes' => 15],
             ],
         );
 
@@ -37,6 +38,7 @@ class DatabaseSeeder extends Seeder
             'thursday' => ['08:00', '18:00'],
             'friday' => ['08:00', '18:00'],
             'saturday' => ['08:00', '14:00'],
+            'sunday' => ['08:00', '18:00'],
         ];
 
         app(TenantContext::class)->run($tenant, function () use ($tenant, $hours): void {
@@ -71,6 +73,22 @@ class DatabaseSeeder extends Seeder
                         'working_hours' => $hours,
                     ],
                 );
+            }
+
+            foreach ($professionals as $professional) {
+                $currentHours = $professional->working_hours ?? [];
+
+                if (! isset($currentHours['sunday'])) {
+                    $currentHours['sunday'] = ['08:00', '18:00'];
+                    $professional->update(['working_hours' => $currentHours]);
+                }
+            }
+
+            $settings = $tenant->settings ?? [];
+
+            if (! isset($settings['agenda_slot_minutes'])) {
+                $tenant->setAgendaSlotMinutes(15);
+                $tenant->save();
             }
 
             $corte = Service::query()->firstOrCreate(

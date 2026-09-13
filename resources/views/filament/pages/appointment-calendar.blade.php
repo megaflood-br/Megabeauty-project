@@ -2,7 +2,7 @@
     @include('filament.agenda.edit-modal-styles')
     <style>
         .mb-agenda {
-            --slot-h: {{ \App\Support\Agenda\ResourceTimeline::SLOT_HEIGHT_PX }}px;
+            --slot-h: {{ $this->timeline()->slotHeightPx() }}px;
             --time-w: 72px;
             --col-w: 168px;
             border: 1px solid #e5e7eb;
@@ -83,37 +83,41 @@
             padding: 0 8px;
             font-size: 11px;
             line-height: var(--slot-h);
-            color: #6b7280;
-            border-bottom: 1px solid transparent;
+            color: #9ca3af;
+            border-bottom: 1px solid #f3f4f6;
         }
         .mb-agenda-slot-label.is-hour {
-            border-bottom-color: #e5e7eb;
+            border-bottom-color: #d1d5db;
             font-weight: 600;
             color: #374151;
         }
+        .dark .mb-agenda-slot-label {
+            border-bottom-color: #1f2937;
+            color: #6b7280;
+        }
         .dark .mb-agenda-slot-label.is-hour {
-            border-bottom-color: #374151;
+            border-bottom-color: #4b5563;
             color: #d1d5db;
         }
         .mb-agenda-col {
             position: relative;
-            border-left: 1px solid #f3f4f6;
+            border-left: 1px solid #e5e7eb;
             background-image: repeating-linear-gradient(
                 to bottom,
-                transparent,
-                transparent calc(var(--slot-h) - 1px),
-                #f3f4f6 calc(var(--slot-h) - 1px),
-                #f3f4f6 var(--slot-h)
+                #ffffff,
+                #ffffff calc(var(--slot-h) - 1px),
+                #e5e7eb calc(var(--slot-h) - 1px),
+                #e5e7eb var(--slot-h)
             );
         }
         .dark .mb-agenda-col {
-            border-left-color: #1f2937;
+            border-left-color: #374151;
             background-image: repeating-linear-gradient(
                 to bottom,
-                transparent,
-                transparent calc(var(--slot-h) - 1px),
-                #1f2937 calc(var(--slot-h) - 1px),
-                #1f2937 var(--slot-h)
+                #111827,
+                #111827 calc(var(--slot-h) - 1px),
+                #374151 calc(var(--slot-h) - 1px),
+                #374151 var(--slot-h)
             );
         }
         .mb-agenda-slots {
@@ -131,12 +135,24 @@
             position: absolute;
             left: 0;
             right: 0;
-            background: #e5e7eb;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(229, 231, 235, 0.72),
+                rgba(229, 231, 235, 0.72) calc(var(--slot-h) - 1px),
+                rgba(209, 213, 219, 0.95) calc(var(--slot-h) - 1px),
+                rgba(209, 213, 219, 0.95) var(--slot-h)
+            );
             pointer-events: none;
             z-index: 1;
         }
         .dark .mb-agenda-off {
-            background: #1f2937;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(31, 41, 55, 0.72),
+                rgba(31, 41, 55, 0.72) calc(var(--slot-h) - 1px),
+                rgba(55, 65, 81, 0.95) calc(var(--slot-h) - 1px),
+                rgba(55, 65, 81, 0.95) var(--slot-h)
+            );
         }
         .mb-agenda-block {
             position: absolute;
@@ -188,13 +204,22 @@
                 {{ $this->formattedDate() }}
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Grade diária por profissional, em intervalos de 15 minutos.
+                Grade diária por profissional, em intervalos de {{ $this->slotIntervalLabel() }}.
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <x-filament::button color="gray" wire:click="previousDay">Dia anterior</x-filament::button>
             <x-filament::button color="gray" wire:click="today">Hoje</x-filament::button>
             <x-filament::button color="gray" wire:click="nextDay">Próximo dia</x-filament::button>
+            @if ($this->canManageInterval())
+                <x-filament::button
+                    color="gray"
+                    tag="a"
+                    :href="\App\Filament\Pages\ManageAgendaSettings::getUrl()"
+                >
+                    Intervalo
+                </x-filament::button>
+            @endif
             <input
                 type="date"
                 wire:model.live="date"
@@ -224,7 +249,7 @@
             <div class="mb-agenda-time">
                 @foreach ($this->timeline()->slots() as $slot)
                     <div @class(['mb-agenda-slot-label', 'is-hour' => $slot['hour']])>
-                        {{ $slot['hour'] ? $slot['label'] : '' }}
+                        {{ $slot['label'] }}
                     </div>
                 @endforeach
             </div>
