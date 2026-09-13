@@ -41,4 +41,50 @@ final class ResourceTimelineTest extends TestCase
         );
         $this->assertNull($timeline->workingWindow(['monday' => ['09:00', '18:00']], $monday->addDay()));
     }
+
+    public function test_builds_ten_minute_slots_when_configured(): void
+    {
+        $timeline = new ResourceTimeline('08:00', '10:00', 10);
+
+        $slots = $timeline->slots();
+
+        $this->assertSame(10, $timeline->slotMinutes());
+        $this->assertSame('08:00', $slots[0]['label']);
+        $this->assertSame('08:10', $slots[1]['label']);
+        $this->assertCount(12, $slots);
+        $this->assertSame(12 * $timeline->slotHeightPx(), $timeline->gridHeight());
+    }
+
+    public function test_clamps_unknown_interval_to_fifteen_minutes(): void
+    {
+        $timeline = new ResourceTimeline('08:00', '09:00', 7);
+
+        $this->assertSame(15, $timeline->slotMinutes());
+        $this->assertCount(4, $timeline->slots());
+    }
+
+    public function test_builds_five_minute_slots_with_visible_labels(): void
+    {
+        $timeline = new ResourceTimeline('08:00', '09:00', 5);
+
+        $slots = $timeline->slots();
+
+        $this->assertSame(5, $timeline->slotMinutes());
+        $this->assertSame('08:00', $slots[0]['label']);
+        $this->assertSame('08:05', $slots[1]['label']);
+        $this->assertSame('08:55', $slots[11]['label']);
+        $this->assertCount(12, $slots);
+        $this->assertGreaterThanOrEqual(ResourceTimeline::MIN_SLOT_HEIGHT_PX, $timeline->slotHeightPx());
+    }
+
+    public function test_builds_hourly_slots_when_configured(): void
+    {
+        $timeline = new ResourceTimeline('08:00', '12:00', 60);
+
+        $slots = $timeline->slots();
+
+        $this->assertSame(60, $timeline->slotMinutes());
+        $this->assertSame(['08:00', '09:00', '10:00', '11:00'], array_column($slots, 'label'));
+        $this->assertCount(4, $slots);
+    }
 }

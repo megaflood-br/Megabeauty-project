@@ -4,19 +4,50 @@ declare(strict_types=1);
 
 namespace App\Support\Agenda;
 
+use App\Enums\AgendaSlotInterval;
+use App\Models\Tenant;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
 final class ResourceTimeline
 {
-    public const SLOT_MINUTES = 15;
+    public const DEFAULT_SLOT_MINUTES = 15;
+
+    /** @deprecated Use slotMinutes() from a tenant-aware instance. */
+    public const SLOT_MINUTES = self::DEFAULT_SLOT_MINUTES;
+
+    public const HOUR_HEIGHT_PX = 112;
+
+    public const MIN_SLOT_HEIGHT_PX = 22;
 
     public const SLOT_HEIGHT_PX = 28;
+
+    private readonly int $slotMinutes;
 
     public function __construct(
         private readonly string $dayStart = '08:00',
         private readonly string $dayEnd = '20:00',
-    ) {}
+        int $slotMinutes = self::DEFAULT_SLOT_MINUTES,
+    ) {
+        $this->slotMinutes = AgendaSlotInterval::clamp($slotMinutes);
+    }
+
+    public static function forTenant(?Tenant $tenant = null): self
+    {
+        $resolved = $tenant ?? tenant();
+
+        return new self(slotMinutes: $resolved?->agendaSlotMinutes() ?? self::DEFAULT_SLOT_MINUTES);
+    }
+
+    public function slotMinutes(): int
+    {
+        return $this->slotMinutes;
+    }
+
+    public function slotHeightPx(): int
+    {
+        return max(self::MIN_SLOT_HEIGHT_PX, (int) round(self::HOUR_HEIGHT_PX * $this->slotMinutes / 60));
+    }
 
     public function startMinutes(): int
     {
@@ -35,11 +66,11 @@ final class ResourceTimeline
     {
         $slots = [];
 
-        for ($minutes = $this->startMinutes(); $minutes < $this->endMinutes(); $minutes += self::SLOT_MINUTES) {
+        for ($minutes = $this->startMinutes(); $minutes < $this->endMinutes(); $minutes += $this->slotMinutes) {
             $slots[] = [
                 'label' => sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60),
                 'minutes' => $minutes,
-                'hour' => $minutes % 60 === 0,
+                'hour' => $this->showsLabel($minutes),
             ];
         }
 
@@ -48,23 +79,24 @@ final class ResourceTimeline
 
     public function gridHeight(): int
     {
-        $slotCount = (int) (($this->endMinutes() - $this->startMinutes()) / self::SLOT_MINUTES);
+        $range = $this->endMinutes() - $this->startMinutes();
+        $slotCount = (int) floor($range / $this->slotMinutes);
 
-        return $slotCount * self::SLOT_HEIGHT_PX;
+        return $slotCount * $this->slotHeightPx();
     }
 
     public function topPx(CarbonInterface $startsAt): int
     {
         $minutes = ($startsAt->hour * 60) + $startsAt->minute - $this->startMinutes();
 
-        return (int) max(0, round($minutes / self::SLOT_MINUTES * self::SLOT_HEIGHT_PX));
+        return (int) max(0, round($minutes / $this->slotMinutes * $this->slotHeightPx()));
     }
 
     public function heightPx(CarbonInterface $startsAt, CarbonInterface $endsAt): int
     {
-        $duration = max(self::SLOT_MINUTES, $startsAt->diffInMinutes($endsAt));
+        $duration = max($this->slotMinutes, $startsAt->diffInMinutes($endsAt));
 
-        return (int) max(self::SLOT_HEIGHT_PX, round($duration / self::SLOT_MINUTES * self::SLOT_HEIGHT_PX));
+        return (int) max($this->slotHeightPx(), round($duration / $this->slotMinutes * $this->slotHeightPx()));
     }
 
     /**
@@ -92,6 +124,11 @@ final class ResourceTimeline
         $mins = $minutes % 60;
 
         return CarbonImmutable::parse($date)->setTime($hours, $mins);
+    }
+
+    private function showsLabel(int $minutes): bool
+    {
+        return $minutes % 60 === 0;
     }
 
     private function toMinutes(string $time): int

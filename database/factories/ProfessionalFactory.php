@@ -32,6 +32,7 @@ class ProfessionalFactory extends Factory
                 'thursday' => ['09:00', '18:00'],
                 'friday' => ['09:00', '18:00'],
                 'saturday' => ['09:00', '14:00'],
+                'sunday' => ['09:00', '18:00'],
             ],
         ];
     }

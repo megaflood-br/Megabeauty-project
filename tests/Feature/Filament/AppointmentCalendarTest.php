@@ -58,9 +58,35 @@ final class AppointmentCalendarTest extends TestCase
             ->assertSee('Ana Caroline Torres')
             ->assertSee('Alongamento de Unha')
             ->assertSee('08:00')
+            ->assertSee('08:15')
+            ->assertSee('08:30')
             ->assertSee('09:00')
+            ->assertSee('15 em 15 minutos')
             ->assertSee("mountAction('editAppointment'", false)
             ->assertDontSee('/appointments/'.$appointment->id.'/edit', false);
+    }
+
+    public function test_calendar_uses_the_tenant_slot_interval(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'subdomain' => 'demo',
+            'settings' => ['agenda_slot_minutes' => 10],
+        ]);
+        $user = User::factory()->owner()->create(['tenant_id' => $tenant->id]);
+        $this->actingAsTenant($tenant);
+
+        Professional::factory()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Ana Souza',
+        ]);
+
+        $this->actingAs($user)
+            ->get('/admin/'.$tenant->subdomain.'/appointment-calendar')
+            ->assertOk()
+            ->assertSee('08:00')
+            ->assertSee('08:10')
+            ->assertSee('08:20')
+            ->assertSee('10 em 10 minutos');
     }
 
     public function test_appointment_block_opens_an_edit_modal_and_saves_changes(): void

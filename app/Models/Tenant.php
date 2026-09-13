@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\AgendaSlotInterval;
 use App\Enums\TenantStatus;
 use Database\Factories\TenantFactory;
 use Filament\Models\Contracts\HasCurrentTenantLabel;
@@ -64,6 +65,18 @@ class Tenant extends Model implements HasCurrentTenantLabel, HasName
     public function getCurrentTenantLabel(): string
     {
         return 'Estabelecimento';
+    }
+
+    public function agendaSlotMinutes(): int
+    {
+        return AgendaSlotInterval::clamp((int) ($this->settings['agenda_slot_minutes'] ?? AgendaSlotInterval::Fifteen->value));
+    }
+
+    public function setAgendaSlotMinutes(int $minutes): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['agenda_slot_minutes'] = AgendaSlotInterval::clamp($minutes);
+        $this->settings = $settings;
     }
 
     /**

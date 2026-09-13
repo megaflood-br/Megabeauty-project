@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Enums\AgendaSlotInterval;
 use App\Enums\AppointmentStatus;
 use App\Enums\FinancialTransactionStatus;
 use App\Enums\FinancialTransactionType;
@@ -68,7 +69,18 @@ class AppointmentCalendar extends Page
 
     public function timeline(): ResourceTimeline
     {
-        return new ResourceTimeline;
+        return ResourceTimeline::forTenant();
+    }
+
+    public function slotIntervalLabel(): string
+    {
+        return AgendaSlotInterval::tryFrom($this->timeline()->slotMinutes())?->label()
+            ?? AgendaSlotInterval::Fifteen->label();
+    }
+
+    public function canManageInterval(): bool
+    {
+        return ManageAgendaSettings::canAccess();
     }
 
     /**
@@ -272,12 +284,12 @@ class AppointmentCalendar extends Page
         }
 
         if ($edge === 'before') {
-            $height = (int) max(0, round(($window['start'] - $timeline->startMinutes()) / ResourceTimeline::SLOT_MINUTES * ResourceTimeline::SLOT_HEIGHT_PX));
+            $height = (int) max(0, round(($window['start'] - $timeline->startMinutes()) / $timeline->slotMinutes() * $timeline->slotHeightPx()));
 
             return $height > 0 ? "top: 0; height: {$height}px;" : null;
         }
 
-        $top = (int) round(($window['end'] - $timeline->startMinutes()) / ResourceTimeline::SLOT_MINUTES * ResourceTimeline::SLOT_HEIGHT_PX);
+        $top = (int) round(($window['end'] - $timeline->startMinutes()) / $timeline->slotMinutes() * $timeline->slotHeightPx());
         $height = $timeline->gridHeight() - $top;
 
         return $height > 0 ? "top: {$top}px; height: {$height}px;" : null;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Enums\AgendaSlotInterval;
 use App\Enums\TenantStatus;
 use App\Enums\UserRole;
 use App\Filament\Resources\TenantResource\Pages;
@@ -94,6 +95,13 @@ class TenantResource extends Resource
                             ->label('Trial até')
                             ->native(false)
                             ->seconds(false),
+                        Forms\Components\Select::make('settings.agenda_slot_minutes')
+                            ->label('Intervalo da agenda')
+                            ->options(AgendaSlotInterval::options())
+                            ->default(AgendaSlotInterval::Fifteen->value)
+                            ->native(false)
+                            ->helperText('Espaço da grade: 5, 10, 15, 20, 30 minutos ou 1 hora.')
+                            ->columnSpanFull(),
                     ]),
             ]);
     }
