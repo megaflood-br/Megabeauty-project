@@ -55,7 +55,7 @@ class ManageAgendaSettings extends Page implements HasForms
         return $form
             ->schema([
                 Forms\Components\Section::make('Grade de horários')
-                    ->description('Escolha o espaço vertical da agenda deste estabelecimento. A grade, os horários do modal e a criação de novos agendamentos usam este intervalo.')
+                    ->description('Também dá para mudar este intervalo no topo da Agenda, no campo “Intervalo da grade”. A coluna de horários da esquerda acompanha a opção escolhida.')
                     ->schema([
                         Forms\Components\Select::make('agenda_slot_minutes')
                             ->label('Intervalo da agenda')

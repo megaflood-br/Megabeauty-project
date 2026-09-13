@@ -16,9 +16,9 @@ final class ResourceTimeline
     /** @deprecated Use slotMinutes() from a tenant-aware instance. */
     public const SLOT_MINUTES = self::DEFAULT_SLOT_MINUTES;
 
-    public const HOUR_HEIGHT_PX = 112;
+    public const HOUR_HEIGHT_PX = 128;
 
-    public const MIN_SLOT_HEIGHT_PX = 22;
+    public const MIN_SLOT_HEIGHT_PX = 24;
 
     public const SLOT_HEIGHT_PX = 28;
 
