@@ -62,6 +62,7 @@ final class AppointmentCalendarTest extends TestCase
             ->assertSee('08:30')
             ->assertSee('09:00')
             ->assertSee('15 em 15 minutos')
+            ->assertSee('Intervalo da grade')
             ->assertSee("mountAction('editAppointment'", false)
             ->assertDontSee('/appointments/'.$appointment->id.'/edit', false);
     }
@@ -86,7 +87,32 @@ final class AppointmentCalendarTest extends TestCase
             ->assertSee('08:00')
             ->assertSee('08:10')
             ->assertSee('08:20')
-            ->assertSee('10 em 10 minutos');
+            ->assertSee('10 em 10 minutos')
+            ->assertSee('Intervalo da grade');
+    }
+
+    public function test_owner_can_change_the_slot_interval_from_the_calendar(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'subdomain' => 'demo',
+            'settings' => ['agenda_slot_minutes' => 15],
+        ]);
+        $user = User::factory()->owner()->create(['tenant_id' => $tenant->id]);
+        $this->actingAsTenant($tenant);
+        $this->actingAs($user);
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Filament::setTenant($tenant);
+
+        Livewire::test(AppointmentCalendar::class)
+            ->assertSee('08:15')
+            ->assertDontSee('08:10')
+            ->set('slotMinutes', 10)
+            ->assertSee('08:10')
+            ->assertSee('08:20')
+            ->assertDontSee('08:15');
+
+        $this->assertSame(10, $tenant->refresh()->agendaSlotMinutes());
     }
 
     public function test_appointment_block_opens_an_edit_modal_and_saves_changes(): void

@@ -3,7 +3,7 @@
     <style>
         .mb-agenda {
             --slot-h: {{ $this->timeline()->slotHeightPx() }}px;
-            --time-w: 72px;
+            --time-w: 84px;
             --col-w: 168px;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
@@ -80,16 +80,18 @@
         }
         .mb-agenda-slot-label {
             height: var(--slot-h);
-            padding: 0 8px;
-            font-size: 11px;
+            padding: 0 10px;
+            font-size: 12px;
             line-height: var(--slot-h);
-            color: #9ca3af;
-            border-bottom: 1px solid #f3f4f6;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            color: #4b5563;
+            border-bottom: 1px solid #e5e7eb;
         }
         .mb-agenda-slot-label.is-hour {
             border-bottom-color: #d1d5db;
-            font-weight: 600;
-            color: #374151;
+            font-weight: 700;
+            color: #111827;
         }
         .dark .mb-agenda-slot-label {
             border-bottom-color: #1f2937;
@@ -204,22 +206,25 @@
                 {{ $this->formattedDate() }}
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Grade diária por profissional, em intervalos de {{ $this->slotIntervalLabel() }}.
+                A coluna da esquerda acompanha o intervalo escolhido: {{ $this->slotIntervalLabel() }}.
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-end gap-2">
+            <label class="flex flex-col gap-1 text-sm">
+                <span class="font-medium text-gray-700 dark:text-gray-200">Intervalo da grade</span>
+                <select
+                    wire:model.live="slotMinutes"
+                    @disabled(! $this->canManageInterval())
+                    class="rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
+                >
+                    @foreach ($this->slotIntervalOptions() as $minutes => $label)
+                        <option value="{{ $minutes }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
             <x-filament::button color="gray" wire:click="previousDay">Dia anterior</x-filament::button>
             <x-filament::button color="gray" wire:click="today">Hoje</x-filament::button>
             <x-filament::button color="gray" wire:click="nextDay">Próximo dia</x-filament::button>
-            @if ($this->canManageInterval())
-                <x-filament::button
-                    color="gray"
-                    tag="a"
-                    :href="\App\Filament\Pages\ManageAgendaSettings::getUrl()"
-                >
-                    Intervalo
-                </x-filament::button>
-            @endif
             <input
                 type="date"
                 wire:model.live="date"

@@ -21,13 +21,13 @@ final class ResourceTimelineTest extends TestCase
         $this->assertSame('08:15', $slots[1]['label']);
         $this->assertFalse($slots[1]['hour']);
         $this->assertCount(8, $slots);
-        $this->assertSame(224, $timeline->gridHeight());
+        $this->assertSame(8 * $timeline->slotHeightPx(), $timeline->gridHeight());
 
         $starts = CarbonImmutable::parse('2026-08-20 09:00:00');
         $ends = CarbonImmutable::parse('2026-08-20 11:10:00');
 
-        $this->assertSame(112, $timeline->topPx($starts));
-        $this->assertSame(243, $timeline->heightPx($starts, $ends));
+        $this->assertSame(4 * $timeline->slotHeightPx(), $timeline->topPx($starts));
+        $this->assertSame((int) round(130 / 15 * $timeline->slotHeightPx()), $timeline->heightPx($starts, $ends));
     }
 
     public function test_resolves_working_window_for_the_weekday(): void

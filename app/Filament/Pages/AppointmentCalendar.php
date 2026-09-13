@@ -12,12 +12,14 @@ use App\Filament\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\FinancialTransaction;
 use App\Models\Professional;
+use App\Models\Tenant;
 use App\Support\Agenda\EditAppointmentModal;
 use App\Support\Agenda\ResourceTimeline;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -42,9 +44,12 @@ class AppointmentCalendar extends Page
 
     public string $date;
 
+    public int $slotMinutes = AgendaSlotInterval::Fifteen->value;
+
     public function mount(): void
     {
         $this->date = now()->toDateString();
+        $this->slotMinutes = $this->currentTenant()?->agendaSlotMinutes() ?? AgendaSlotInterval::Fifteen->value;
     }
 
     public function getMaxContentWidth(): MaxWidth|string|null
@@ -69,18 +74,66 @@ class AppointmentCalendar extends Page
 
     public function timeline(): ResourceTimeline
     {
-        return ResourceTimeline::forTenant();
+        return new ResourceTimeline(slotMinutes: $this->slotMinutes);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function slotIntervalOptions(): array
+    {
+        return AgendaSlotInterval::options();
     }
 
     public function slotIntervalLabel(): string
     {
-        return AgendaSlotInterval::tryFrom($this->timeline()->slotMinutes())?->label()
+        return AgendaSlotInterval::tryFrom($this->slotMinutes)?->label()
             ?? AgendaSlotInterval::Fifteen->label();
+    }
+
+    public function updatedSlotMinutes(mixed $value): void
+    {
+        $minutes = AgendaSlotInterval::clamp((int) $value);
+        $this->slotMinutes = $minutes;
+
+        if (! $this->canManageInterval()) {
+            $this->slotMinutes = $this->currentTenant()?->agendaSlotMinutes() ?? AgendaSlotInterval::Fifteen->value;
+
+            return;
+        }
+
+        $tenant = $this->currentTenant();
+
+        if ($tenant === null) {
+            return;
+        }
+
+        $tenant->setAgendaSlotMinutes($minutes);
+        $tenant->save();
+
+        Notification::make()
+            ->title('Intervalo da agenda atualizado')
+            ->body('A coluna de horários agora segue '.$this->slotIntervalLabel().'.')
+            ->success()
+            ->send();
     }
 
     public function canManageInterval(): bool
     {
         return ManageAgendaSettings::canAccess();
+    }
+
+    private function currentTenant(): ?Tenant
+    {
+        $filament = Filament::getTenant();
+
+        if ($filament instanceof Tenant) {
+            return $filament;
+        }
+
+        $context = tenant();
+
+        return $context instanceof Tenant ? $context : null;
     }
 
     /**
